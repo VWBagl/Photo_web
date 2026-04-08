@@ -1,0 +1,31 @@
+# created by virtualenv automatically
+# environment
+.env
+*.env.bak
+*.env.local
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+staticfiles/
+media/
+
+# virtual environment
+.venv
+venv
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tests, cashe
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+
+.DS_Store
