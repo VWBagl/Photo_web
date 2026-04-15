@@ -24,7 +24,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
-#'django-insecure-g@(9+6)^_93*%)y$kgrb93d60b=gv()-dnk%i*ow@mk^(c+400'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
