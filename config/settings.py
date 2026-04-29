@@ -126,3 +126,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 AUTH_USER_MODEL = 'photo_web.User'
+
+# если пользователь пытается зайти на закрытую страницу без входа
+LOGIN_URL = 'auth'
+
+# после успешного входа перезод на страницу фотографий
+LOGIN_REDIRECT_URL = 'photo_gallery'
+
+# после выхода
+LOGOUT_REDIRECT_URL = 'auth'

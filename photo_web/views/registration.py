@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from ..forms import RegistrationForm
 from ..services.registration_service import RegistrationService
 
@@ -11,15 +12,16 @@ def registration_view(request):
             try:
                 user = RegistrationService.create_user(
                     username=form.cleaned_data['username'],
-                    password=form.cleaned_data['password1'],
+                    password=form.cleaned_data['password'],
                 )
                 login(request, user)
                 messages.success(request, "Регистрация прошла успешно!")
-                # Временно: потом 'photo_gallery'
-                return redirect('registration') 
+                return redirect('auth')
+            except ValidationError as e:
+                form.add_error('username', e.message)
             except Exception:
                 messages.error(request, "Ошибка при создании аккаунта. Попробуйте позже.")
     else:
         form = RegistrationForm()
-        
+
     return render(request, 'photo_web/registration.html', {'form': form})
