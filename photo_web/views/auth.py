@@ -1,10 +1,13 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib import messages
 from ..forms import AuthForm
 from ..services.auth_service import AuthService
 
 def auth_view(request):
+    if request.user.is_authenticated:
+        return redirect('photo_gallery')
+    
     if request.method == 'POST':
         form = AuthForm(request.POST)
         if form.is_valid():
@@ -26,3 +29,7 @@ def auth_view(request):
         form = AuthForm()
         
     return render(request, 'photo_web/auth.html', {'form': form})
+
+def logout_view(request):
+    logout(request)  # Очищает сессию
+    return redirect('auth') 
