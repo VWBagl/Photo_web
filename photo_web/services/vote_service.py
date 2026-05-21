@@ -1,0 +1,2 @@
+class VoteService:
+    pass

@@ -2,8 +2,76 @@
 {% block title %}Галерея{% endblock %}
 
 {% block content %}
-<div class="container py-5 text-center">
-    <h1 class="mb-3">Галерея фотографий</h1>
-    <p class="text-muted">Здесь будут отображаться фотографии.</p>
+<div class="container py-4">
+    <!-- Панель управления -->
+    <form id="gallery-controls" class="row g-3 mb-4 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label">Поиск</label>
+            <input type="text" name="q" class="form-control" placeholder="Автор, название или описание..."
+                value="{{ search_query }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Сортировка</label>
+            <select name="sort" class="form-select">
+                <option value="date" {% if is_sort_date %}selected{% endif %}>По дате добавления</option>
+                <option value="votes" {% if is_sort_votes %}selected{% endif %}>По количеству голосов</option>
+                <option value="comments" {% if is_sort_comments %}selected{% endif %}>По количеству комментариев
+                </option>
+            </select>
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </div>
+    </form>
+
+    <!-- Контейнер для асинхронной подгрузки -->
+    <div id="gallery-container">
+        {% include 'photo_web/_photo_grid.html' %}
+    </div>
 </div>
+
+<!-- JS для асинхронности -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('gallery-controls');
+        const container = document.getElementById('gallery-container');
+        let debounceTimer;
+
+        // Функция загрузки фрагмента
+        function loadFragment(params) {
+            const url = new URL('{% url "gallery_fragment" %}', window.location.origin);
+            Object.keys(params).forEach(key => url.searchParams.set(key, params[key]));
+
+            fetch(url)
+                .then(res => res.text())
+                .then(html => { container.innerHTML = html; })
+                .catch(err => console.error('Gallery fetch error:', err));
+        }
+
+        // Поиск с задержкой
+        form.querySelector('input[name="q"]').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => loadFragment(new FormData(form)), 400);
+        });
+
+        // Сортировка
+        form.querySelector('select[name="sort"]').addEventListener('change', () => {
+            loadFragment(new FormData(form));
+        });
+
+        // Перехват кликов по пагинации
+        container.addEventListener('click', (e) => {
+            const link = e.target.closest('.page-link');
+            if (link && !link.parentElement.classList.contains('disabled') && !link.parentElement.classList.contains('active')) {
+                e.preventDefault();
+                const url = new URL(link.href);
+                loadFragment({
+                    q: url.searchParams.get('q') || '',
+                    sort: url.searchParams.get('sort') || 'date',
+                    p: url.searchParams.get('p')
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}{{ photo.title }}{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+    <a href="{% url 'photo_gallery' %}" class="btn btn-outline-secondary mb-4">← Назад к галерее</a>
+
+    <div class="row g-4">
+        <!-- Левая колонка: фото + полное описание -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <img src="{{ photo.original_image.url }}" class="rounded shadow-sm"
+                    style="width: 100%; height: 500px; object-fit: contain; background: #f8f9fa;"
+                    alt="{{ photo.title }}">
+
+                <div class="card-body">
+                    <h3 class="card-title mb-3">{{ photo.title }}</h3>
+
+                    <!-- Обновлённый блок: Автор + Интерактивный счётчик -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="text-muted small">
+                            {{ photo.author.username }} | {{ photo.approved_at|date:"d.m.Y" }}
+                        </div>
+
+                        {% if user.is_authenticated %}
+                        <!-- Для авторизованных: кликабельный счётчик -->
+                        <span class="vote-trigger d-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-light"
+                            data-photo-id="{{ photo.id }}" title="Проголосовать">
+                            <span class="vote-icon fs-4 mb-0">❤️</span>
+                            <span class="vote-count fs-5 fw-bold mb-0">{{ photo.votes_count }}</span>
+                        </span>
+                        {% else %}
+                        <!-- Для неавторизованных: показывает Toast -->
+                        <span class="vote-trigger d-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-light"
+                            aria-disabled="true" title="Только для авторизованных">
+                            <span class="vote-icon fs-4 mb-0">❤️</span>
+                            <span class="vote-count fs-5 fw-bold mb-0">{{ photo.votes_count }}</span>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <p class="mt-3">{{ photo.description|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка: комментарии -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Комментарии ({{ photo.comments_count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if comments %}
+                    {% for comment in comments %}
+                    <div class="mb-3 p-2 bg-light rounded">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <strong>{{ comment.author.username }}</strong>
+                            <span>{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <p class="mb-0 mt-1">{{ comment.text|linebreaks }}</p>
+
+                        <!-- Placeholder вложенности (до 2 уровня) -->
+                        {% if comment.replies.exists %}
+                        {% for reply in comment.replies.all %}
+                        <div class="ms-4 mt-2 p-2 border-start border-secondary">
+                            <div class="d-flex justify-content-between small text-muted">
+                                <strong>{{ reply.author.username }}</strong>
+                                <span>{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                            <p class="mb-0 mt-1 small">{{ reply.text|linebreaks }}</p>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    {% else %}
+                    <p class="text-muted text-center py-3">Пока нет комментариев.</p>
+                    {% endif %}
+
+                    <!-- Placeholder формы комментария -->
+                    <div class="mt-4 pt-3 border-top">
+                        {% if user.is_authenticated %}
+                        <!-- Форма для авторизованного пользователя -->
+                        <!-- Заменить # на реальный url сервиса комментариев -->
+                        <form id="comment-form" action="#" method="POST"
+                            class="d-flex gap-2 align-items-start mt-4 pt-3 border-top">
+                            {% csrf_token %}
+                            <textarea id="comment-textarea" name="comment_text" class="form-control" rows="2"
+                                placeholder="Напишите комментарий..."></textarea>
+                            <button type="submit" class="btn btn-outline-primary btn-comment-submit align-self-end">
+                                Отправить
+                            </button>
+                        </form>
+                        <!-- Надо поправить -->
+                        <!-- <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                const textarea = document.getElementById('comment-textarea');
+                                const form = document.getElementById('comment-form');
+
+                                if (textarea && form) {
+                                    textarea.addEventListener('keydown', function (e) {
+                                        // Enter без Shift - отправит форму
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault(); // Отмена переноса строки по Enter
+                                            form.requestSubmit(); // Отправка формы
+                                        }
+                                    });
+                                }
+                            });
+                        </script> -->
+
+                        {% else %}
+                        <!-- Блок для неавторизованного пользователя -->
+                        <div class="alert alert-light border text-center py-3 mb-0">
+                            <p class="mb-2 text-muted">
+                                Комментировать фотографии могут только авторизованные пользователи.
+                            </p>
+                            <a href="{% url 'auth' %}" class="btn btn-primary btn-sm">
+                                Войти или зарегистрироваться
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+    /* Базовые переходы */
+    .btn-vote,
+    .btn-comment-submit {
+        transition: all 0.2s ease;
+    }
+
+    /* Принудительно включаем взаимодействие, даже если есть disabled */
+    .btn-vote[disabled],
+    .btn-vote.disabled,
+    .btn-comment-submit[disabled],
+    .btn-comment-submit.disabled {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
+    }
+
+    /* Ховер для кнопки голосования */
+    .btn-vote:hover {
+        background-color: #e63946 !important;
+        color: #ffffff !important;
+        border-color: #e63946 !important;
+        transform: scale(1.05);
+    }
+
+    /* Ховер для кнопки отправки комментария */
+    .btn-comment-submit:hover {
+        background-color: #0d6efd !important;
+        color: #ffffff !important;
+        border-color: #0d6efd !important;
+        box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
+    }
+</style>

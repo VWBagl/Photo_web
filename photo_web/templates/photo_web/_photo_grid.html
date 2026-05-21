@@ -1,0 +1,101 @@
+<style>
+    /* Оверлей скрыт по умолчанию */
+    .photo-overlay {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    /* Ховер срабатывает ТОЛЬКО при наведении на изображение */
+    .photo-link:hover .photo-overlay {
+        opacity: 1 !important;
+    }
+
+    .object-fit-cover {
+        object-fit: cover;
+    }
+</style>
+
+{% if photos %}
+<div class="row g-4" id="photo-grid">
+    {% for photo in photos %}
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="card h-100 shadow-sm">
+            <!-- Кликабельная и ховер-зона: только для изображения -->
+            <a href="{% url 'photo_detail' photo.id %}" class="photo-link d-block position-relative overflow-hidden"
+                style="aspect-ratio: 4/3;">
+                <img src="{{ photo.original_image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ photo.title }}">
+                {% if photo.description %}
+                <div
+                    class="photo-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 text-white d-flex align-items-center justify-content-center p-3">
+                    <p class="text-center small mb-0">{{ photo.description|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </a>
+
+            <!-- Область с информацией о картинке: НЕ ховерится, НЕ кликабельна -->
+            <div class="card-body d-flex flex-column">
+                <h6 class="card-title mb-1 text-truncate">{{ photo.title }}</h6>
+                <p class="card-text text-muted small mb-2">
+                    {{ photo.author.username }} | {{ photo.approved_at|date:"d.m.Y" }}
+                </p>
+                <div class="d-flex align-items-center gap-3 text-muted small mt-auto pt-2 border-top">
+                    {% if user.is_authenticated %}
+                    <!-- Для авторизованных: кликабельный счётчик  -->
+                    <span class="vote-trigger d-flex align-items-center gap-1" data-photo-id="{{ photo.id }}"
+                        title="Проголосовать">
+                        <span class="vote-icon">❤️</span>
+                        <span class="vote-count">{{ photo.votes_count }}</span>
+                    </span>
+                    {% else %}
+                    <!-- Для неавторизованных: показывает Toast-уведомление-->
+                    <span class="vote-trigger d-flex align-items-center gap-1" aria-disabled="true"
+                        title="Только для авторизованных">
+                        <span class="vote-icon">❤️</span>
+                        <span class="vote-count">{{ photo.votes_count }}</span>
+                    </span>
+                    {% endif %}
+
+                    <!-- Счётчик комментариев -->
+                    <span class="d-flex align-items-center gap-1">
+                        <span>💬</span>
+                        <span>{{ photo.comments_count }}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Пагинация -->
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if photos.has_previous %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?q={{ search_query }}&sort={{ current_sort }}&p={{ photos.previous_page_number }}">← Назад</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">Стр. {{ photos.number }} из {{ photos.paginator.num_pages }}</span>
+        </li>
+
+        {% if photos.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?q={{ search_query }}&sort={{ current_sort }}&p={{ photos.next_page_number }}">Вперёд →</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Вперёд →</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <h4>Пока нет одобренных фотографий</h4>
+</div>
+{% endif %}

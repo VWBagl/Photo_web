@@ -11,7 +11,7 @@
 
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- Шапка с динамической навигацией -->
+    <!-- Шапка -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container d-flex justify-content-between align-items-center">
             <a class="navbar-brand" href="{% url 'photo_gallery' %}">📸 Фотоконкурс</a>
@@ -45,15 +45,85 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Футер  -->
+    <!-- Футер -->
     <footer class="bg-light py-3 mt-auto">
         <div class="container text-center text-muted">
             &copy; {% now "Y" %} Фотоконкурс
         </div>
     </footer>
 
+    <!-- Toast-уведомление -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="authRequiredToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning text-dark">
+                <strong class="me-auto">Требуется авторизация</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                <p class="mb-2">Голосовать могут только авторизованные пользователи</p>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'auth' %}" class="btn btn-sm btn-primary">Войти или зарегистрироваться</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Скрипт для показа Toast при клике на голосование -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Находим все триггеры голосования с aria-disabled="true"
+            document.querySelectorAll('.vote-trigger[aria-disabled="true"]').forEach(function (trigger) {
+                trigger.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    //  Toast-уведомление
+                    const toastEl = document.getElementById('authRequiredToast');
+                    const toast = new bootstrap.Toast(toastEl, {
+                        delay: 10000 // 10 секунд
+                    });
+                    toast.show();
+                });
+            });
+        });
+    </script>
 </body>
+
+<style>
+    .photo-overlay {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .photo-link:hover .photo-overlay {
+        opacity: 1 !important;
+    }
+
+    .object-fit-cover {
+        object-fit: cover;
+    }
+
+    /* Стили для интерактивного счётчика */
+    .vote-trigger {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 2px 6px;
+        border-radius: 6px;
+        color: inherit;
+    }
+
+    .vote-trigger:hover {
+        color: #e63946 !important;
+        background-color: rgba(230, 57, 70, 0.08);
+    }
+
+    .vote-trigger:hover .vote-icon {
+        transform: scale(1.2);
+    }
+</style>
 
 </html>
