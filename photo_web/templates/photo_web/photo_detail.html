@@ -94,24 +94,6 @@
                                 Отправить
                             </button>
                         </form>
-                        <!-- Надо поправить -->
-                        <!-- <script>
-                            document.addEventListener('DOMContentLoaded', function () {
-                                const textarea = document.getElementById('comment-textarea');
-                                const form = document.getElementById('comment-form');
-
-                                if (textarea && form) {
-                                    textarea.addEventListener('keydown', function (e) {
-                                        // Enter без Shift - отправит форму
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault(); // Отмена переноса строки по Enter
-                                            form.requestSubmit(); // Отправка формы
-                                        }
-                                    });
-                                }
-                            });
-                        </script> -->
-
                         {% else %}
                         <!-- Блок для неавторизованного пользователя -->
                         <div class="alert alert-light border text-center py-3 mb-0">
