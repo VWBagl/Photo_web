@@ -1,42 +1,36 @@
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import F
 from photo_web.models import Photo, Vote
+
 
 class VoteService:
     @classmethod
     @transaction.atomic
     def switch_vote(cls, user, photo_id: int) -> dict:
-        # Получаем фото, если оно одобрено
-        # select_for_update - блокирует строку на время транзакции
+
+        # Переключает голос пользователя
+        # Возвращает: {'action': 'added' | 'removed', 'votes_count': int}
+
+        # Проверяем существование фото и его статус.
         try:
-            photo = Photo.objects.select_for_update().get(
-                id = photo_id,
-                status = Photo.Status.approved)
-        except ObjectDoesNotExist:
-            raise ValueError('Фотография не найдена')
-        
-        # Проверяем голосовал ли пользователь
-        vote_exist = Vote.objects.filter(user=user, photo=photo).exists()
+            photo = Photo.objects.get(id=photo_id, status=Photo.Status.approved)
+        except Photo.DoesNotExist:
+            raise ValueError('Фотография не найдена или не одобрена')
 
-        # Если голосовал - голос снимается
-        if vote_exist:
-            Vote.objects.filter(user=user, photo=photo).delete()
-            photo.votes_count -= 1
-            result_action = 'removed'
-        
-        # Если не голосовал - голос добавляется
+        # проверяем/создаём запись голоса
+        # created=True - голоса ещё не было, False - уже есть
+        vote, created = Vote.objects.get_or_create(user=user, photo=photo)
+
+        # Обновляем счётчик через F()-выражение.
+        # F() вычисляет в PostgreSQL, исключая race condition.
+        if created:
+            action = 'added'
+            Photo.objects.filter(id=photo.id).update(votes_count=F('votes_count') + 1)
+            new_count = photo.votes_count + 1
         else:
-            Vote.objects.filter(user=user, photo=photo).create()
-            photo.votes_count += 1
-            result_action = 'added'
+            action = 'removed'
+            vote.delete()
+            Photo.objects.filter(id=photo.id).update(votes_count=F('votes_count') - 1)
+            new_count = photo.votes_count - 1
 
-        # Сохранение изменений
-        # update_field - обновит конкретное поле
-        photo.save(update_fields=['votes_count'])
-
-        return {
-            'action':result_action,
-            'votes_count':photo.votes_count
-        }
-
-
+        return {'action': action, 'votes_count': new_count}
