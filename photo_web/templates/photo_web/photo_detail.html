@@ -52,33 +52,95 @@
                     <h5 class="mb-0">Комментарии ({{ photo.comments_count }})</h5>
                 </div>
                 <div class="card-body">
-                    {% if comments %}
-                    {% for comment in comments %}
-                    <div class="mb-3 p-2 bg-light rounded">
-                        <div class="d-flex justify-content-between small text-muted">
-                            <strong>{{ comment.author.username }}</strong>
-                            <span>{{ comment.created_at|date:"d.m.Y H:i" }}</span>
-                        </div>
-                        <p class="mb-0 mt-1">{{ comment.text|linebreaks }}</p>
-
-                        <!-- Placeholder вложенности (до 2 уровня) -->
-                        {% if comment.replies.exists %}
-                        {% for reply in comment.replies.all %}
-                        <div class="ms-4 mt-2 p-2 border-start border-secondary">
-                            <div class="d-flex justify-content-between small text-muted">
-                                <strong>{{ reply.author.username }}</strong>
-                                <span>{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+                    <div id="comments-list">
+                        {% if comments %}
+                        {% for comment in comments %}
+                        <div class="mb-3 p-2 bg-light rounded comment-item" data-comment-id="{{ comment.id }}"
+                            data-text="{{ comment.text|escapejs }}">
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
+                                <strong>{{ comment.author.username }}</strong>
+                                <span class="created-at">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
                             </div>
-                            <p class="mb-0 mt-1 small">{{ reply.text|linebreaks }}</p>
+                            <p class="mb-2 comment-text">{{ comment.text|linebreaks }}</p>
+
+                            <div class="d-flex gap-3 mt-1">
+                                {% if user == comment.author or user.is_moderator %}
+                                <button type="button" class="comment-action-link comment-edit-btn">Изменить</button>
+                                {% endif %}
+                                <button type="button" class="comment-action-link comment-reply-btn"
+                                    data-parent-id="{{ comment.id }}">Ответить</button>
+                                {% if user == comment.author or user.is_moderator %}
+                                <button type="button" class="comment-action-link comment-delete-btn">Удалить</button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Форма ответа -->
+                            <div class="mt-2 d-none reply-form-container">
+                                <textarea class="form-control form-control-sm reply-textarea" rows="2"
+                                    placeholder="Ваш ответ..."></textarea>
+                                <div class="d-flex gap-2 mt-1">
+                                    <button type="button"
+                                        class="btn btn-sm btn-primary reply-submit-btn">Отправить</button>
+                                    <button type="button"
+                                        class="btn btn-sm btn-secondary reply-cancel-btn">Отмена</button>
+                                </div>
+                            </div>
+                            <!-- Форма редактирования -->
+                            <div class="mt-2 d-none edit-form-container">
+                                <textarea class="form-control form-control-sm edit-textarea" rows="2"></textarea>
+                                <div class="d-flex gap-2 mt-1">
+                                    <button type="button"
+                                        class="btn btn-sm btn-primary edit-save-btn">Сохранить</button>
+                                    <button type="button"
+                                        class="btn btn-sm btn-secondary edit-cancel-btn">Отмена</button>
+                                </div>
+                            </div>
+
+                            <!-- Вложенные ответы -->
+                            {% if comment.replies.exists %}
+                            <div class="ms-4 mt-2 border-start border-secondary ps-2">
+                                {% for reply in comment.replies.all %}
+                                <div class="mb-2 p-2 bg-white rounded comment-item" data-comment-id="{{ reply.id }}"
+                                    data-text="{{ reply.text|escapejs }}">
+                                    <div class="d-flex justify-content-between small text-muted mb-1">
+                                        <strong class="text-primary">{{ reply.author.username }}</strong>
+                                        <span class="created-at">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+                                    </div>
+                                    <p class="mb-1 small comment-text">{{ reply.text|linebreaks }}</p>
+
+                                    <!-- Кнопки ответа -->
+                                    <div class="d-flex gap-3 mt-1">
+                                        {% if user == reply.author or user.is_moderator %}
+                                        <button type="button"
+                                            class="comment-action-link comment-edit-btn">Изменить</button>
+                                        {% endif %}
+                                        {% if user == reply.author or user.is_moderator %}
+                                        <button type="button"
+                                            class="comment-action-link comment-delete-btn">Удалить</button>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Форма редактирования для ответа -->
+                                    <div class="mt-2 d-none edit-form-container">
+                                        <textarea class="form-control form-control-sm edit-textarea"
+                                            rows="2"></textarea>
+                                        <div class="d-flex gap-2 mt-1">
+                                            <button type="button"
+                                                class="btn btn-sm btn-primary edit-save-btn">Сохранить</button>
+                                            <button type="button"
+                                                class="btn btn-sm btn-secondary edit-cancel-btn">Отмена</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
+                        {% else %}
+                        <p class="text-muted text-center py-3">Пока нет комментариев.</p>
                         {% endif %}
                     </div>
-                    {% endfor %}
-
-                    {% else %}
-                    <p class="text-muted text-center py-3">Пока нет комментариев.</p>
-                    {% endif %}
 
                     <!-- Placeholder формы комментария -->
                     <div class="mt-4 pt-3 border-top">
