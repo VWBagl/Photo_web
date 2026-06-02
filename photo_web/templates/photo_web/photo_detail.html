@@ -61,7 +61,7 @@
                                 <strong>{{ comment.author.username }}</strong>
                                 <span class="created-at">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
                             </div>
-                            <p class="mb-2 comment-text">{{ comment.text|linebreaks }}</p>
+                            <div class="mb-2 comment-text">{{ comment.text|linebreaks }}</div>
 
                             <div class="d-flex gap-3 mt-1">
                                 {% if user == comment.author or user.is_moderator %}
@@ -106,7 +106,7 @@
                                         <strong class="text-primary">{{ reply.author.username }}</strong>
                                         <span class="created-at">{{ reply.created_at|date:"d.m.Y H:i" }}</span>
                                     </div>
-                                    <p class="mb-1 small comment-text">{{ reply.text|linebreaks }}</p>
+                                    <div class="mb-1 small comment-text">{{ reply.text|linebreaks }}</div>
 
                                     <!-- Кнопки ответа -->
                                     <div class="d-flex gap-3 mt-1">
