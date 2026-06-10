@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from ..models import Photo
-from ..services.comment_service import CommentService 
+from ..services.comment.read_service import CommentReadService
 
 def photo_detail_view(request, photo_id):
     # Только одобренные фото + автор и комментарии 
@@ -11,7 +11,7 @@ def photo_detail_view(request, photo_id):
     )
     
     # Комментарии
-    comments = CommentService.get_comments_for_photo(photo.id)
+    comments = CommentReadService.get_comments_for_photo(photo.id)
     
     return render(request, 'photo_web/photo_detail.html', {
         'photo': photo,
