@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib import messages
-from ..forms import AuthForm
-from ..services.auth_service import AuthService
+from ...forms import AuthForm
+from ...services.authorization.auth import AuthService
 
 def auth_view(request):
     if request.user.is_authenticated:

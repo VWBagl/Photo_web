@@ -1,6 +1,6 @@
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from ..models import User
+from ...models import User
 
 class RegistrationService:
     @staticmethod

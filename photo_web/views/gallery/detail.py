@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
-from ..models import Photo
-from ..services.comment.read_service import CommentReadService
+from ...models import Photo
+from ...services.comment.read_service import CommentReadService
 
 def photo_detail_view(request, photo_id):
     # Только одобренные фото + автор и комментарии 

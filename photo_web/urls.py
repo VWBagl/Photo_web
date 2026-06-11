@@ -1,9 +1,9 @@
 from django.urls import path
-from .views.registration import registration_view
-from .views.auth import auth_view, logout_view
-from .views.photo_gallery import gallery_view, gallery_fragment_view
-from .views.photo_detail import photo_detail_view
-from .views.vote import SwitchVoteView
+from .views.registration.registration import registration_view
+from .views.authorization.auth import auth_view, logout_view
+from .views.gallery.gallery import gallery_view, gallery_fragment_view
+from .views.gallery.detail import photo_detail_view
+from .views.vote.vote import SwitchVoteView
 from .views.comment.create import CreateCommentView
 from .views.comment.update_delete import CommentManageView
 

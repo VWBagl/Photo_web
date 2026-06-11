@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from ..forms import RegistrationForm
-from ..services.registration_service import RegistrationService
+from ...forms import RegistrationForm
+from ...services.registration.registration import RegistrationService
 
 def registration_view(request):
     if request.method == 'POST':

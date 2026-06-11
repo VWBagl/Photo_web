@@ -3,7 +3,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 
-from photo_web.services.vote_service import VoteService
+from photo_web.services.vote.vote import VoteService
 
 
 class SwitchVoteView(LoginRequiredMixin, View):

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from ..services.gallery_service import GalleryService
+from ...services.gallery.gallery import GalleryService
 
 def _prepare_gallery_context(request):
     # извлекает параметры из запроса, 
