@@ -28,4 +28,10 @@ venv
 htmlcov/
 .tox/
 
+# Celery
+celerybeat-schedule
+celerybeat-schedule.bak
+celerybeat-schedule.dir
+celerybeat-schedule.dat
+
 .DS_Store

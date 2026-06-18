@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -52,6 +53,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    'photo_web.middleware.ServiceErrorMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -135,3 +138,18 @@ LOGIN_REDIRECT_URL = 'photo_gallery'
 
 # после выхода
 LOGOUT_REDIRECT_URL = 'auth'
+
+# Celery Config
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BEAT_SCHEDULE = {
+    'process-scheduled-deletions-every-minute': {
+        'task': 'photo_web.tasks.process_scheduled_deletions',
+        'schedule': 5.0, # Каждые 5 секунд пока для наглядности
+        # 'schedule': 60.0,  # Каждую минуту в готовый проект
+    },
+}
