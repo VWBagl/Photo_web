@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block title %}Загрузить фотографию{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <h2 class="mb-4">Загрузить фотографию</h2>
+
+            <form id="upload-form" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Превью изображения -->
+                <div class="mb-4">
+                    <label class="form-label">Фотография *</label>
+                    <div id="image-preview-container" class="border rounded p-3 text-center bg-light"
+                        style="min-height: 200px;">
+                        <div id="image-preview-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor"
+                                class="text-muted mb-2" viewBox="0 0 16 16">
+                                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                <path
+                                    d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                            </svg>
+                            <p class="text-muted mb-2">Нажмите для выбора файла</p>
+                            <p class="text-muted small">JPG, PNG, WebP (макс. 10 МБ)</p>
+                        </div>
+                        <img id="image-preview" src="" alt="Preview" class="d-none img-fluid rounded"
+                            style="max-height: 300px;">
+                    </div>
+                    <input type="file" id="image-input" name="image" accept=".jpg,.jpeg,.png,.webp" class="d-none"
+                        required>
+                    <div id="file-error" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <!-- Название -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Название *</label>
+                    <input type="text" id="title" name="title" class="form-control"
+                        placeholder="Введите название фотографии" maxlength="255" required>
+                    <div id="title-error" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <!-- Описание -->
+                <div class="mb-4">
+                    <label for="description" class="form-label">Описание</label>
+                    <textarea id="description" name="description" class="form-control"
+                        placeholder="Расскажите о фотографии..." rows="4" maxlength="5000"></textarea>
+                    <div id="description-error" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <!-- Кнопки -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill" id="submit-btn">
+                        Загрузить
+                    </button>
+                    <a href="{% url 'my_photos' %}" class="btn btn-outline-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('upload-form');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const previewPlaceholder = document.getElementById('image-preview-placeholder');
+        const previewContainer = document.getElementById('image-preview-container');
+        const fileError = document.getElementById('file-error');
+        const titleInput = document.getElementById('title');
+        const titleError = document.getElementById('title-error');
+        const descriptionInput = document.getElementById('description');
+        const descriptionError = document.getElementById('description-error');
+        const submitBtn = document.getElementById('submit-btn');
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 МБ
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        // Клик по области превью открывает выбор файла
+        previewContainer.addEventListener('click', function () {
+            imageInput.click();
+        });
+
+        // Превью изображения при выборе файла
+        imageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Валидация типа файла
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showError(fileError, 'Недопустимый тип файла. Разрешены: JPG, PNG, WebP');
+                imageInput.value = '';
+                return;
+            }
+
+            // Валидация размера файла
+            if (file.size > MAX_FILE_SIZE) {
+                showError(fileError, 'Файл слишком большой. Максимальный размер: 10 МБ');
+                imageInput.value = '';
+                return;
+            }
+
+            hideError(fileError);
+
+            // Показываем превью
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('d-none');
+                previewPlaceholder.classList.add('d-none');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Валидация названия
+        titleInput.addEventListener('input', function () {
+            if (this.value.trim().length === 0) {
+                showError(titleError, 'Название обязательно');
+            } else if (this.value.length > 255) {
+                showError(titleError, 'Название слишком длинное (макс. 255 символов)');
+            } else {
+                hideError(titleError);
+            }
+        });
+
+        // Валидация описания
+        descriptionInput.addEventListener('input', function () {
+            if (this.value.length > 5000) {
+                showError(descriptionError, 'Описание слишком длинное (макс. 5000 символов)');
+            } else {
+                hideError(descriptionError);
+            }
+        });
+
+        // Отправка формы
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Финальная валидация
+            if (!imageInput.files[0]) {
+                showError(fileError, 'Выберите фотографию');
+                return;
+            }
+
+            if (titleInput.value.trim().length === 0) {
+                showError(titleError, 'Название обязательно');
+                titleInput.focus();
+                return;
+            }
+
+            if (titleInput.value.length > 255) {
+                showError(titleError, 'Название слишком длинное');
+                return;
+            }
+
+            if (descriptionInput.value.length > 5000) {
+                showError(descriptionError, 'Описание слишком длинное');
+                return;
+            }
+
+            // Отключаем кнопку
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Загрузка...';
+
+            // Формируем FormData
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+            formData.append('title', titleInput.value.trim());
+            formData.append('description', descriptionInput.value.trim());
+
+            // Отправляем запрос
+            fetch('/api/profile/photos/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            })
+                .then(res => res.ok ? res.json() : res.json().then(d => { throw new Error(d.error) }))
+                .then(data => {
+                    // Успешная загрузка — редирект на страницу "Мои фотографии"
+                    window.location.href = '{% url "my_photos" %}';
+                })
+                .catch(err => {
+                    alert('Ошибка загрузки: ' + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Загрузить';
+                });
+        });
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('d-none');
+        }
+
+        function hideError(element) {
+            element.classList.add('d-none');
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}
