@@ -5,22 +5,18 @@ from photo_web.services.profile.photo_upload_service import PhotoUploadService
 
 
 class PhotoUploadView(LoginRequiredMixin, View):
-    """
-    Вьюха для загрузки фотографии.
-    """
-    
     def post(self, request):
-        # Извлекаем данные из запроса
-        title = request.POST.get('title', '').strip()
-        description = request.POST.get('description', '').strip()
-        image_file = request.FILES.get('image')
+        # inputs — данные для валидации формой
+        inputs = {
+            'title': request.POST.get('title', '').strip(),
+            'description': request.POST.get('description', '').strip(),
+        }
         
-        # Вызываем сервис
-        result = PhotoUploadService.upload_photo(
+        # kwargs — дополнительные параметры (не валидируются формой)
+        result = PhotoUploadService.execute(
+            inputs=inputs,
             user=request.user,
-            title=title,
-            description=description,
-            image_file=image_file
+            image_file=request.FILES.get('image')
         )
-
+        
         return JsonResponse({"status": "success", **result}, status=201)

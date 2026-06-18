@@ -5,15 +5,10 @@ from photo_web.services.profile.photo_delete_service import PhotoDeleteService
 
 
 class PhotoDeleteView(LoginRequiredMixin, View):
-    """
-    Вьюха для отложенного удаления фотографии.
-    """
-    
     def delete(self, request, photo_id):
-        # Вызываем сервис
-        result = PhotoDeleteService.schedule_deletion(
+        result = PhotoDeleteService.execute(
+            inputs={},  # Нет данных для валидации
             user=request.user,
             photo_id=int(photo_id)
         )
-        
         return JsonResponse({"status": "success", **result}, status=200)

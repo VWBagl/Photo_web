@@ -4,9 +4,7 @@ from django.shortcuts import render
 
 
 class PhotoUploadPageView(LoginRequiredMixin, View):
-    """
-    Вьюха для отображения страницы загрузки фотографии.
-    """
+    """Вьюха для отображения страницы загрузки фотографии."""
     
     def get(self, request):
         return render(request, 'photo_web/upload.html')
