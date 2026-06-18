@@ -21,9 +21,9 @@
             <nav class="navbar-nav">
                 {% if user.is_authenticated %}
                 <!-- Блок для авторизованного пользователя -->
-                <span class="navbar-text text-light me-3">
+                <a href="{% url 'my_photos' %}" class="navbar-text text-light me-3 text-decoration-none">
                     👤 {{ user.username }}
-                </span>
+                </a>
                 <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Выйти</a>
                 {% else %}
                 <!-- Блок для гостя -->

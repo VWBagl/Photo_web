@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% block title %}Мои фотографии{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Мои фотографии</h2>
+        <a href="{% url 'upload_photo_page' %}" class="btn btn-primary btn-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="me-2"
+                viewBox="0 0 16 16">
+                <path
+                    d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                <path
+                    d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+            </svg>
+            Загрузить фото
+        </a>
+    </div>
+
+    <!-- Табы фильтрации -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if is_all %}active{% endif %}" href="{% url 'my_photos' %}?status=all">
+                Все <span class="badge bg-secondary">{{ counts.all }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if is_moderated %}active{% endif %}" href="{% url 'my_photos' %}?status=moderated">
+                На модерации <span class="badge bg-warning text-dark">{{ counts.moderated }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if is_approved %}active{% endif %}" href="{% url 'my_photos' %}?status=approved">
+                Одобрены <span class="badge bg-success">{{ counts.approved }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if is_rejected %}active{% endif %}" href="{% url 'my_photos' %}?status=rejected">
+                Отклонены <span class="badge bg-danger">{{ counts.rejected }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if is_scheduled_deletion %}active{% endif %}"
+                href="{% url 'my_photos' %}?status=scheduled_deletion">
+                На удалении <span class="badge bg-dark">{{ counts.scheduled_deletion }}</span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Список фотографий -->
+    {% if photos %}
+    <div class="row g-4">
+        {% for photo in photos %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <!-- Изображение -->
+                {% if photo.status == 'approved' %}
+                <a href="{% url 'photo_detail' photo.id %}" class="d-block position-relative overflow-hidden"
+                    style="aspect-ratio: 4/3;">
+                    <img src="{{ photo.original_image.url }}" class="w-100 h-100 object-fit-cover"
+                        alt="{{ photo.title }}">
+                </a>
+                {% else %}
+                <div class="d-block position-relative overflow-hidden" style="aspect-ratio: 4/3;">
+                    <img src="{{ photo.original_image.url }}" class="w-100 h-100 object-fit-cover"
+                        alt="{{ photo.title }}">
+                </div>
+                {% endif %}
+
+                <!-- Информация -->
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title mb-2 text-truncate">{{ photo.title }}</h6>
+
+                    <!-- Статус -->
+                    <!-- Статус -->
+                    <div class="mb-2">
+                        {% if photo.status == 'moderated' %}
+                        <span class="badge bg-warning text-dark">На модерации</span>
+                        {% elif photo.status == 'approved' %}
+                        <span class="badge bg-success">Одобрено</span>
+                        {% elif photo.status == 'rejected' %}
+                        <span class="badge bg-danger">Отклонено</span>
+                        {% elif photo.status == 'deletion_scheduled' %}
+                        <span class="badge bg-dark">
+                            Удаление через <span class="countdown"
+                                data-deletion-time="{{ photo.scheduled_deletion_at|date:'c' }}">загрузка...</span>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Дата -->
+                    <p class="card-text text-muted small mb-3">
+                        {{ photo.created_at|date:"d.m.Y H:i" }}
+                    </p>
+
+                    <!-- Кнопки действий -->
+                    <div class="d-flex gap-2 mt-auto">
+                        {% if photo.status == 'deletion_scheduled' %}
+                        <button class="btn btn-sm btn-success flex-fill restore-photo-btn"
+                            data-photo-id="{{ photo.id }}">
+                            Восстановить
+                        </button>
+                        {% else %}
+                        {% if photo.status != 'deleted' %}
+                        <button class="btn btn-sm btn-outline-primary flex-fill edit-photo-btn"
+                            data-photo-id="{{ photo.id }}">
+                            Редактировать
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger flex-fill delete-photo-btn"
+                            data-photo-id="{{ photo.id }}">
+                            Удалить
+                        </button>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if photos.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if photos.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?status={{ current_filter }}&page={{ photos.previous_page_number }}">←
+                    Назад</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">Стр. {{ photos.number }} из {{ photos.paginator.num_pages }}</span>
+            </li>
+
+            {% if photos.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?status={{ current_filter }}&page={{ photos.next_page_number }}">Вперёд</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Вперёд</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Пустое состояние -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="text-muted"
+                viewBox="0 0 16 16">
+                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                <path
+                    d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+            </svg>
+        </div>
+        <h4 class="text-muted">У вас пока нет фотографий</h4>
+        <p class="text-muted mb-4">Загрузите первую фотографию, чтобы начать участие в фотоконкурсе</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+
+    // ОБРАТНЫЙ ОТСЧЁТ ДО УДАЛЕНИЯ
+    function updateCountdowns() {
+        document.querySelectorAll('.countdown').forEach(el => {
+            // Если карточка уже обработана — пропускаем
+            if (el.dataset.processed === 'true') return;
+
+            const deletionTime = new Date(el.dataset.deletionTime);
+            const now = new Date();
+            const diff = deletionTime - now;
+
+            if (diff <= 0) {
+                // Помечаем как обработанную, чтобы не дёргать повторно
+                el.dataset.processed = 'true';
+
+                // 1. Меняем текст бейджа
+                el.textContent = 'Удаляется...';
+
+                // 2. Меняем цвет бейджа на тревожный
+                const badge = el.closest('.badge');
+                if (badge && !badge.classList.contains('bg-danger')) {
+                    badge.classList.remove('bg-dark');
+                    badge.classList.add('bg-danger');
+                }
+
+                // 3. Делаем карточку полупрозрачной
+                const card = el.closest('.card');
+                if (card) {
+                    card.style.opacity = '0.5';
+                    card.style.transition = 'opacity 0.5s ease';
+
+                    // 4. Полностью заменяем кнопку "Восстановить" на "Обновить список"
+                    // cloneNode(true) отвязывает ВСЕ старые обработчики!
+                    const restoreBtn = card.querySelector('.restore-photo-btn');
+                    if (restoreBtn) {
+                        const newBtn = restoreBtn.cloneNode(true);
+                        newBtn.textContent = 'Обновить список';
+                        newBtn.className = 'btn btn-sm btn-outline-secondary flex-fill';
+                        // Убираем старые классы, которые могли остаться
+                        newBtn.classList.remove('restore-photo-btn');
+                        newBtn.classList.add('refresh-list-btn');
+                        // Вешаем ТОЛЬКО новый обработчик — без confirm
+                        newBtn.addEventListener('click', function () {
+                            location.reload();
+                        });
+                        // Заменяем старую кнопку новой в DOM
+                        restoreBtn.parentNode.replaceChild(newBtn, restoreBtn);
+                    }
+
+                    // 5. Через 15 секунд убираем карточку из DOM (визуально)
+                    // Это закроет "мёртвую зону" между истечением времени и тиком Celery
+                    setTimeout(() => {
+                        const col = card.closest('.col-12');
+                        if (col) {
+                            col.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                            col.style.opacity = '0';
+                            col.style.transform = 'scale(0.95)';
+                            setTimeout(() => col.remove(), 500);
+                        }
+                    }, 15000);
+                }
+
+                return;
+            }
+
+            // Штатный обратный отсчёт
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                el.textContent = `${hours}ч ${minutes}мин`;
+            } else if (minutes > 0) {
+                el.textContent = `${minutes}мин ${seconds}сек`;
+            } else {
+                el.textContent = `${seconds}сек`;
+            }
+        });
+    }
+
+    // Обновляем каждую секунду
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+
+
+    // ДЕЙСТВИЯ С ФОТОГРАФИЯМИ
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Обработчик для кнопок "Редактировать"
+        document.querySelectorAll('.edit-photo-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const photoId = this.dataset.photoId;
+                window.location.href = `/profile/photos/${photoId}/edit/`;
+            });
+        });
+
+        // Обработчик для кнопок "Удалить"
+        document.querySelectorAll('.delete-photo-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const photoId = this.dataset.photoId;
+                if (!confirm('Вы уверены, что хотите удалить фотографию? У вас будет время отменить удаление.')) return;
+
+                fetch(`/api/profile/photos/${photoId}/delete/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(res => res.ok ? res.json() : res.json().then(d => { throw new Error(d.error) }))
+                    .then(data => {
+                        alert(data.message);
+                        location.reload();
+                    })
+                    .catch(err => alert('Ошибка: ' + err.message));
+            });
+        });
+
+        // Обработчик для кнопок "Восстановить"
+        document.querySelectorAll('.restore-photo-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const photoId = this.dataset.photoId;
+                if (!confirm('Вы уверены, что хотите восстановить фотографию?')) return;
+
+                fetch(`/api/profile/photos/${photoId}/restore/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(res => res.ok ? res.json() : res.json().then(d => { throw new Error(d.error) }))
+                    .then(data => {
+                        alert(data.message);
+                        location.reload();
+                    })
+                    .catch(err => alert('Ошибка: ' + err.message));
+            });
+        });
+
+        // Обработчик для кнопки "Загрузить фото"
+        document.querySelectorAll('.upload-photo-btn').forEach(btn => {
+            btn.addEventListener('click', function uploadPhoto() {
+                window.location.href = '{% url "upload_photo_page" %}';
+            });
+        });
+    });
+</script>
+
+<style>
+    .object-fit-cover {
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
