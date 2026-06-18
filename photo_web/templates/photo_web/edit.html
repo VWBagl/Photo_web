@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block title %}Редактировать фотографию{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <h2 class="mb-4">Редактировать фотографию</h2>
+
+            <form id="edit-form" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Текущее изображение -->
+                <div class="mb-4">
+                    <label class="form-label">Текущая фотография</label>
+                    <div class="border rounded p-3 bg-light">
+                        <img src="{{ photo.original_image.url }}" alt="{{ photo.title }}" class="img-fluid rounded"
+                            style="max-height: 400px;">
+                    </div>
+                </div>
+
+                <!-- Предыдущее изображение (если есть) -->
+                {% if photo.previous_image %}
+                <div class="mb-4">
+                    <label class="form-label">Предыдущая версия (для модератора)</label>
+                    <div class="border rounded p-3 bg-light">
+                        <img src="{{ photo.previous_image.url }}" alt="Previous version" class="img-fluid rounded"
+                            style="max-height: 300px; opacity: 0.7;">
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Превью нового изображения -->
+                <div class="mb-4 d-none" id="new-image-preview-container">
+                    <label class="form-label">Новая фотография (предпросмотр)</label>
+                    <div class="border rounded p-3 bg-light">
+                        <img id="new-image-preview" src="" alt="New preview" class="img-fluid rounded"
+                            style="max-height: 400px;">
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="cancel-new-image">
+                            Отменить замену
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Кнопка замены файла -->
+                <div class="mb-4">
+                    <label class="form-label">Заменить фотографию (опционально)</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-outline-primary" id="select-new-image-btn">
+                            Выбрать новый файл
+                        </button>
+                        <span class="text-muted small" id="file-name-display"></span>
+                    </div>
+                    <input type="file" id="new-image-input" name="image" accept=".jpg,.jpeg,.png,.webp" class="d-none">
+                    <div id="file-error" class="text-danger small mt-1 d-none"></div>
+                    <div class="alert alert-warning small mt-2" role="alert">
+                        <strong>Внимание:</strong> При замене файла фотография будет отправлена на повторную модерацию.
+                    </div>
+                </div>
+
+                <!-- Название -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Название *</label>
+                    <input type="text" id="title" name="title" class="form-control" value="{{ photo.title }}"
+                        maxlength="255" required>
+                    <div id="title-error" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <!-- Описание -->
+                <div class="mb-4">
+                    <label for="description" class="form-label">Описание</label>
+                    <textarea id="description" name="description" class="form-control" rows="4"
+                        maxlength="5000">{{ photo.description }}</textarea>
+                    <div id="description-error" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <!-- Кнопки -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill" id="submit-btn">
+                        Сохранить изменения
+                    </button>
+                    <a href="{% url 'my_photos' %}" class="btn btn-outline-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('edit-form');
+        const newImageInput = document.getElementById('new-image-input');
+        const selectNewImageBtn = document.getElementById('select-new-image-btn');
+        const newImagePreviewContainer = document.getElementById('new-image-preview-container');
+        const newImagePreview = document.getElementById('new-image-preview');
+        const cancelNewImageBtn = document.getElementById('cancel-new-image');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const fileError = document.getElementById('file-error');
+        const titleInput = document.getElementById('title');
+        const titleError = document.getElementById('title-error');
+        const descriptionInput = document.getElementById('description');
+        const descriptionError = document.getElementById('description-error');
+        const submitBtn = document.getElementById('submit-btn');
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 МБ
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        let newImageSelected = false;
+
+        // Клик по кнопке "Выбрать новый файл"
+        selectNewImageBtn.addEventListener('click', function () {
+            newImageInput.click();
+        });
+
+        // Превью нового изображения при выборе файла
+        newImageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Валидация типа файла
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showError(fileError, 'Недопустимый тип файла. Разрешены: JPG, PNG, WebP');
+                newImageInput.value = '';
+                return;
+            }
+
+            // Валидация размера файла
+            if (file.size > MAX_FILE_SIZE) {
+                showError(fileError, 'Файл слишком большой. Максимальный размер: 10 МБ');
+                newImageInput.value = '';
+                return;
+            }
+
+            hideError(fileError);
+
+            // Показываем превью
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                newImagePreview.src = e.target.result;
+                newImagePreviewContainer.classList.remove('d-none');
+                fileNameDisplay.textContent = file.name;
+                newImageSelected = true;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Отмена замены изображения
+        cancelNewImageBtn.addEventListener('click', function () {
+            newImageInput.value = '';
+            newImagePreviewContainer.classList.add('d-none');
+            fileNameDisplay.textContent = '';
+            newImageSelected = false;
+        });
+
+        // Валидация названия
+        titleInput.addEventListener('input', function () {
+            if (this.value.trim().length === 0) {
+                showError(titleError, 'Название обязательно');
+            } else if (this.value.length > 255) {
+                showError(titleError, 'Название слишком длинное (макс. 255 символов)');
+            } else {
+                hideError(titleError);
+            }
+        });
+
+        // Валидация описания
+        descriptionInput.addEventListener('input', function () {
+            if (this.value.length > 5000) {
+                showError(descriptionError, 'Описание слишком длинное (макс. 5000 символов)');
+            } else {
+                hideError(descriptionError);
+            }
+        });
+
+        // Отправка формы
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Финальная валидация
+            if (titleInput.value.trim().length === 0) {
+                showError(titleError, 'Название обязательно');
+                titleInput.focus();
+                return;
+            }
+
+            if (titleInput.value.length > 255) {
+                showError(titleError, 'Название слишком длинное');
+                return;
+            }
+
+            if (descriptionInput.value.length > 5000) {
+                showError(descriptionError, 'Описание слишком длинное');
+                return;
+            }
+
+            // Проверяем, есть ли изменения
+            const originalTitle = '{{ photo.title|escapejs }}';
+            const originalDescription = '{{ photo.description|escapejs }}';
+            const titleChanged = titleInput.value.trim() !== originalTitle;
+            const descriptionChanged = descriptionInput.value.trim() !== originalDescription;
+
+            if (!titleChanged && !descriptionChanged && !newImageSelected) {
+                alert('Нет изменений для сохранения');
+                return;
+            }
+
+            // Отключаем кнопку
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Сохранение...';
+
+            // Формируем FormData или JSON
+            let requestBody;
+            let contentType;
+
+            if (newImageSelected) {
+                // Если есть новый файл — используем FormData
+                requestBody = new FormData();
+                requestBody.append('title', titleInput.value.trim());
+                requestBody.append('description', descriptionInput.value.trim());
+                requestBody.append('image', newImageInput.files[0]);
+                contentType = undefined; // Браузер сам установит multipart/form-data
+            } else {
+                // Если только текст — используем JSON
+                requestBody = JSON.stringify({
+                    title: titleInput.value.trim(),
+                    description: descriptionInput.value.trim()
+                });
+                contentType = 'application/json';
+            }
+
+            // Отправляем PATCH-запрос
+            fetch('{% url "edit_photo" photo.id %}', {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    ...(contentType && { 'Content-Type': contentType })
+                },
+                body: requestBody
+            })
+                .then(res => res.ok ? res.json() : res.json().then(d => { throw new Error(d.error) }))
+                .then(data => {
+                    // Успешное сохранение — редирект на страницу "Мои фотографии"
+                    window.location.href = '{% url "my_photos" %}';
+                })
+                .catch(err => {
+                    alert('Ошибка сохранения: ' + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Сохранить изменения';
+                });
+        });
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('d-none');
+        }
+
+        function hideError(element) {
+            element.classList.add('d-none');
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}
